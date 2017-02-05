@@ -24,19 +24,20 @@ int portnum;
 
 // PARSING
 bool startServer(int argc, char* argv[]) {    
-	if (sizeof(argv) <= 1) {
-		howto();
+	if (argc <= 1) {
+		printf("\nERROR\n");
+        howto();
 		return false;
 	}
 
     if (!isPort(argv[1])) {
-        printf("Invalid port number. Exiting the program.\n");
+        printf("\nInvalid port number. Exiting the program.\n");
         howto();
         return false;
     }
     
     if (!isDirectory(argv[2])) {
-        printf("Invalid directory. Exiting the program.\n");
+        printf("\nInvalid directory. Exiting the program.\n");
         howto();
         return false;
     }
@@ -83,7 +84,7 @@ void printOK() {
 }
 
 void howto() {
-    printf("\nCorrect syntax: ./sws <port> <directory>\n\n");
+    printf("Correct syntax: ./sws <port> <directory>\n\n");
 }
 
 
