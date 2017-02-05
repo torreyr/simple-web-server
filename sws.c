@@ -24,6 +24,11 @@ int portnum;
 
 // PARSING
 bool startServer(int argc, char* argv[]) {    
+	if (sizeof(argv) <= 1) {
+		howto();
+		return false;
+	}
+
     if (!isPort(argv[1])) {
         printf("Invalid port number. Exiting the program.\n");
         howto();
@@ -53,8 +58,12 @@ bool isDirectory(char* str) {
 
 bool parseRequest(char* request) {
     // TODO: do this with regular expressions
-    char* thing1, path, httpver;
-    sscanf("%s %s %s", thing1, path, httpver, request);
+    printf("here\n");
+
+	char* thing1;
+	char* path;
+	char* httpver;
+    // sscanf("%s %s %s", &thing1, &path, &httpver, request);
     printf("request: %s %s %s", thing1, path, httpver);
     return true;
 }
