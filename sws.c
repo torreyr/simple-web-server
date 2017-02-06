@@ -129,9 +129,11 @@ bool createServer() {
             printf("Didn't receive any data...");
             return false;
         } else {
-            time_t curtime;
-            time(&curtime);
-            printf("Current time = %s", ctime(&curtime));
+            char* now = malloc(15);
+            time curtime;
+            curtime = localtime(&curtime);
+            strftime(now, 30, "%c", curtime);
+            printf("%s\n", now);
         }
         
 		//printf("printing data...\n");        
