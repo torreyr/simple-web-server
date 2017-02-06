@@ -41,8 +41,8 @@ bool startServer(int argc, char* argv[]) {
         howto();
         return false;
     }
-    
-    return true;
+   
+	return true;
 }
 
 bool isPort(char* str) {
@@ -59,13 +59,18 @@ bool isDirectory(char* str) {
 
 bool parseRequest(char* request) {
     // TODO: do this with regular expressions
-    printf("here\n");
+	
+	printf("%s\n", request);
+	printf("in parseRequest\n");
 
-	char* thing1;
-	char* path;
-	char* httpver;
-    // sscanf("%s %s %s", &thing1, &path, &httpver, request);
-    printf("request: %s %s %s", thing1, path, httpver);
+	char* thing1 = malloc(50);
+	char* path = malloc(50);
+	char* httpver = malloc(50);
+
+    int scan = sscanf(request, "%s %s %s", thing1, path, httpver);
+	printf("%d\n", scan);
+	printf("scanned request and printing\n");
+	printf("request: %s %s %s\n", thing1, path, httpver);
     return true;
 }
 
@@ -116,15 +121,16 @@ bool createServer() {
     
 
     while(1) {
-        printf("here\n");
-        recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+        printf("in while loop\n");
+		recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
         if (recsize <= 0) {
             printf("Didn't receive any data...");
             return false;
         } 
-        
+		printf("printing data...\n");
+		buffer[sizeof(buffer)] = '\0';
         printf("data: %s\n", buffer);
-        parseRequest(buffer);
+		parseRequest(buffer);
     }
     
     return true;
