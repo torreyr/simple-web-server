@@ -94,6 +94,18 @@ void howto() {
     printf("Correct syntax: ./sws <port> <directory>\n\n");
 }
 
+char* getTime() {
+    char* buffer;
+	buffer = malloc(20);
+    time_t curtime;
+	struct tm* times;
+	
+	time(&curtime);
+    times = localtime(&curtime);
+    strftime(buffer, 30, "%b %d %T", times);
+	return buffer;
+}
+
 
 // SERVER
 bool createServer() {
@@ -129,11 +141,7 @@ bool createServer() {
             printf("Didn't receive any data...");
             return false;
         } else {
-            char* now = malloc(15);
-            time curtime;
-            curtime = localtime(&curtime);
-            strftime(now, 30, "%c", curtime);
-            printf("%s\n", now);
+			printf("%s", getTime());
         }
         
 		//printf("printing data...\n");        
