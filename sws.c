@@ -102,10 +102,11 @@ bool parseRequest(char* request) {
     sprintf(buffer, "./%s%s", server_dir, path);
     
     // Account for non-case-sensitive.
-    for(int i = 0; method[i]; i++){
+    int i, j;
+	for(i = 0; method[i]; i++){
         method[i] = toupper(method[i]);
     }
-    for(int i = 0; httpver[i]; i++){
+    for(j = 0; httpver[i]; i++){
         httpver[i] = toupper(httpver[i]);
     }
     
@@ -170,10 +171,10 @@ bool createServer() {
     
     sock_addr.sin_family      = AF_INET;
     sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sock_addr.sin_port        = htons(8080);
+    sock_addr.sin_port        = htons(8060);
 
     if (bind(sock, (struct sockaddr*) &sock_addr, len) != 0) {
-        printf("Couldn't bind socket. Closing the socket.");
+        printf("Couldn't bind socket. Closing the socket.\n");
         close(sock);
         return false;
     }
