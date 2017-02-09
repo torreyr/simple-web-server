@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <time.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,60 +22,7 @@ bool createServer();
 // Global Variables
 DIR* dirptr;
 int portnum;
-
-
-// PARSING
-bool startServer(int argc, char* argv[]) {    
-	if (argc <= 1) {
-		printf("\nERROR\n");
-        howto();
-		return false;
-	}
-
-    if (!isPort(argv[1])) {
-        printf("\nInvalid port number. Exiting the program.\n");
-        howto();
-        return false;
-    }
-    
-    if (!isDirectory(argv[2])) {
-        printf("\nInvalid directory. Exiting the program.\n");
-        howto();
-        return false;
-    }
-   
-	return true;
-}
-
-bool isPort(char* str) {
-    portnum = atoi(str);
-    if( (portnum > 0) && (portnum < 65535) ) return true;
-    return false;
-}
-
-bool isDirectory(char* str) {
-    dirptr = opendir(str);
-    if (dirptr == NULL) return false;
-    else return true;
-}
-
-bool parseRequest(char* request) {
-    // TODO: do this with regular expressions
-	
-	printf("%s\n", request);
-	printf("in parseRequest\n");
-
-	char* thing1  = malloc(50);
-	char* path    = malloc(50);
-	char* httpver = malloc(50);
-
-    sscanf(request, "%s %s %s", thing1, path, httpver);
-	printf("scanned request and printing\n");
-	printf("request: %s %s %s\n", thing1, path, httpver);
-    return true;
-    
-    // TODO: check the validity of every part of the request
-}
+char* server_dir;
 
 
 // CONSOLE
@@ -83,7 +31,7 @@ void printBadRequest() {
 }
 
 void printNotFound() {
-    printf("ERROR 404: Request Not Found\n");
+    printf("ERROR 404: Not Found\n");
 }
 
 void printOK() {
@@ -107,7 +55,104 @@ char* getTime() {
 }
 
 
+// PARSING
+bool isPort(char* str) {
+    portnum = atoi(str);
+    if( (portnum > 0) && (portnum < 65535) ) return true;
+    return false;
+}
+
+bool isDirectory(char* str) {
+    dirptr = opendir(str);
+    if (dirptr == NULL) return false;
+    else return true;
+}
+
+bool parseRequest(char* request) {
+    // TODO: do this with regular expressions
+	
+	printf("%s\n", request);
+	printf("in parseRequest\n");
+
+	char* method  = malloc(50);
+	char* path    = malloc(50);
+	char* httpver = malloc(50);
+    
+    char* buffer = (char*) malloc(sizeof(char) * 1000);
+    
+    
+    /* TODO:
+     *  Scan through for first newline character. Delete everything following.
+     *  Split at the spaces.
+     *  Send chunks to their respective functions.
+     */
+    
+    /*printf("HERE\n");
+    char* ptr = strchr(request, '\n');
+    if (ptr == NULL) {
+        printf("No newline character found.\n");
+    } else {
+        printf("found a newline character\n");
+        printf("%s", strtok(request, ptr));
+    }*/
+    
+    //strtok(request, " \t");
+    
+    sscanf(request, "%s %s %s", method, path, httpver);
+    sprintf(buffer, "./%s%s", server_dir, path);
+    
+    // Account for non-case-sensitive.
+    for(int i = 0; method[i]; i++){
+        method[i] = toupper(method[i]);
+    }
+    for(int i = 0; httpver[i]; i++){
+        httpver[i] = toupper(httpver[i]);
+    }
+    
+    // Validate request.
+    if (strcmp(method, "GET") != 0) {
+        printBadRequest();
+        return false;
+    }
+    if (strncmp(httpver, "HTTP/1.0", 8) != 0) {
+        printBadRequest();
+        return false;
+    }
+    
+    if (fopen(buffer, "r") == NULL) {
+        printNotFound();
+        return false;
+    }
+    
+	printf("scanned request and printing\n");
+	printf("request: %s %s %s\n", method, path, httpver);
+    return true;
+}
+
+
 // SERVER
+bool startServer(int argc, char* argv[]) {    
+	if (argc <= 1) {
+		printf("\nERROR\n");
+        howto();
+		return false;
+	}
+
+    if (!isPort(argv[1])) {
+        printf("\nInvalid port number. Exiting the program.\n");
+        howto();
+        return false;
+    }
+    
+    if (!isDirectory(argv[2])) {
+        printf("\nInvalid directory. Exiting the program.\n");
+        howto();
+        return false;
+    } else server_dir = argv[2];
+    
+	return true;
+}
+
 bool createServer() {
     char buffer[1024];
     struct sockaddr_in sock_addr;
@@ -147,12 +192,14 @@ bool createServer() {
 		//printf("printing data...\n");        
 		buffer[sizeof(buffer)] = '\0';
         printf("data: %s\n", buffer);
-		parseRequest(buffer);
+		if (!parseRequest(buffer)) printf("Error parsing request...");
+        
+        
+        //parseRequest("GET /index.html HTTP/1.0\r\n\r\n");
+        //break;
         
         /* TODO:
          *  listen for the q to quit
-         *  get time stamp
-         *  open the file
          *  send the response header and file
          *  reference the lab code that you used
          */
