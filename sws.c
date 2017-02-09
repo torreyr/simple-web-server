@@ -167,10 +167,20 @@ bool startServer(int argc, char* argv[]) {
 bool createServer() {
     char buffer[1024];
     struct sockaddr_in sock_addr;
+    fd_set read_fds;
     
+    
+    // Create socket.
     int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == -1) {
         printf("Couldn't create socket. Exiting the program.");
+        return false;
+    }
+    
+    // Set socket options.
+    int opt = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*) &opt, sizeof(opt)) == -1) {
+        printf("Problem setting socket options. Closing the socket.");
         return false;
     }
     
@@ -181,18 +191,49 @@ bool createServer() {
     
     sock_addr.sin_family      = AF_INET;
     sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sock_addr.sin_port        = htons(8060);
+    sock_addr.sin_port        = htons(portnum);
 
+    // Bind socket.
     if (bind(sock, (struct sockaddr*) &sock_addr, len) != 0) {
         printf("Couldn't bind socket. Closing the socket.\n");
         close(sock);
         return false;
     }
     
-
+    // Loop forever to receive requests.
     while(1) {
         printf("in while loop\n");
-		recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+        
+        // Reset file descriptors.
+        FD_ZERO(&read_fds);
+        FD_SET(sock, &read_fds);
+        FD_SET(0, &read_fds);
+
+        select(sock + 1, &read_fds, 0, 0, 0);
+        if (FD_ISSET(0, &read_fds)) {
+            
+            close(sock);
+            printf("Quitting...\n");
+            return false;
+            
+        } else if (FD_ISSET(sock + 1, &read_fds)) {
+            
+            recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+            if (recsize <= 0) {
+                printf("Didn't receive any data...");
+                return false;
+            } else {
+                printf("%s\n", getTime());
+            }
+            
+            //printf("printing data...\n");        
+            buffer[sizeof(buffer)] = '\0';
+            printf("data: %s\n", buffer);
+            if (!parseRequest(buffer)) printf("Error parsing request...");
+            
+        }
+        
+		/*recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
         if (recsize <= 0) {
             printf("Didn't receive any data...");
             return false;
@@ -204,6 +245,7 @@ bool createServer() {
 		buffer[sizeof(buffer)] = '\0';
         printf("data: %s\n", buffer);
 		if (!parseRequest(buffer)) printf("Error parsing request...");
+        */
         
         //parseRequest("GET /index.html HTTP/1.0\r\n\r\n");
         //break;
@@ -222,6 +264,5 @@ bool createServer() {
 // MAIN
 int main(int argc, char* argv[]) {
     if ( !startServer(argc, argv) ) return 0;
-    if ( !createServer() ) return 0;
-
+    if ( !createServer(argv) ) return 0;
 }
