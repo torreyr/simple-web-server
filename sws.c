@@ -79,6 +79,7 @@ bool parseRequest(char* request) {
 	char* httpver = malloc(50);
     
     char* buffer = (char*) malloc(sizeof(char) * 1000);
+    char* buffer_two = (char*) malloc(sizeof(char) * 1000);
     
     
     /* TODO:
@@ -120,9 +121,18 @@ bool parseRequest(char* request) {
         return false;
     }
     
-    if (fopen(buffer, "r") == NULL) {
+    FILE* fp = fopen(buffer, "r");
+    if (fp == NULL) {
         printNotFound();
         return false;
+    } else {
+        fseek(fp, 0, SEEK_END);
+        int size = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        fread(buffer_two, 1, size, fp);
+        buffer_two[size] = 0;
+        printf("FILE CONTENTS:\n%s\n", buffer_two);
+        fclose(fp);
     }
     
 	printf("scanned request and printing\n");
@@ -187,14 +197,13 @@ bool createServer() {
             printf("Didn't receive any data...");
             return false;
         } else {
-			printf("%s", getTime());
+			printf("%s\n", getTime());
         }
         
 		//printf("printing data...\n");        
 		buffer[sizeof(buffer)] = '\0';
         printf("data: %s\n", buffer);
 		if (!parseRequest(buffer)) printf("Error parsing request...");
-        
         
         //parseRequest("GET /index.html HTTP/1.0\r\n\r\n");
         //break;
