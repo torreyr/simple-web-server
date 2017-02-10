@@ -165,7 +165,7 @@ bool startServer(int argc, char* argv[]) {
 }
 
 bool createServer() {
-    char buffer[1024];
+    char buffer[1000];
     struct sockaddr_in sock_addr;
     fd_set read_fds;
     
@@ -202,22 +202,27 @@ bool createServer() {
     
     // Loop forever to receive requests.
     while(1) {
-        printf("in while loop\n");
         
         // Reset file descriptors.
         FD_ZERO(&read_fds);
         FD_SET(sock, &read_fds);
         FD_SET(0, &read_fds);
 
-        select(sock + 1, &read_fds, 0, 0, 0);
-        if (FD_ISSET(0, &read_fds)) {
+		printf("%d %d\n", sock, sock + 1);
+        printf("%d\n", select(sock + 1, &read_fds, 0, 0, 0));
+        //select(sock + 1, &read_fds, 0, 0, 0);
+        if(FD_ISSET(0, &read_fds) != 0) printf("Standard in is set.\n");
+		if(FD_ISSET(sock+1, &read_fds) != 0) printf("Socket in is set.\n");
+		break;
+		/*if (FD_ISSET(0, &read_fds)) {
             
             close(sock);
             printf("Quitting...\n");
             return false;
             
-        } else if (FD_ISSET(sock + 1, &read_fds)) {
-            
+        } else*/ if (FD_ISSET(sock + 1, &read_fds) != 0) {
+		    printf("Read something from the socket.\n");
+
             recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
             if (recsize <= 0) {
                 printf("Didn't receive any data...");
@@ -230,8 +235,14 @@ bool createServer() {
             buffer[sizeof(buffer)] = '\0';
             printf("data: %s\n", buffer);
             if (!parseRequest(buffer)) printf("Error parsing request...");
+			memset(buffer, 0, 1000 * sizeof(char));	
+			break;
             
-        }
+        } else if (FD_ISSET(0, &read_fds) != 0) {
+			close(sock);
+			printf("Quitting...\n");
+			return false;
+		}
         
 		/*recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
         if (recsize <= 0) {
