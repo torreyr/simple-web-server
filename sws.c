@@ -112,14 +112,13 @@ bool parseRequest(int sock, char* request) {
     
     // TODO: check for blank line at the end of the request
     
-    /*printf("HERE\n");
     char* ptr = strchr(request, '\n');
     if (ptr == NULL) {
         printf("No newline character found.\n");
     } else {
         printf("found a newline character\n");
-        printf("%s", strtok(request, ptr));
-    }*/
+       // printf("%s", strtok(request, ptr));
+    }
     
     sscanf(request, "%s %s %s", method, path, httpver);
     sprintf(buffer, "./%s%s", server_dir, path);
@@ -210,7 +209,7 @@ int sendResponse(int sock, char* data) {
 
 bool startServer(int argc, char* argv[]) {    
 	if (argc <= 1) {
-		printf("\nERROR\n");
+		printf("\nIncorrect syntax.\n");
         howto();
 		return false;
 	}
@@ -226,6 +225,9 @@ bool startServer(int argc, char* argv[]) {
         howto();
         return false;
     } else server_dir = argv[2];
+	
+	printf("sws is running on UDP port %s and serving %s\n", argv[1], argv[2]);
+	printf("press 'q' to quit ...\n");
     
 	return true;
 }
