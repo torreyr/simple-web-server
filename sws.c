@@ -61,6 +61,7 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 	int clport = ntohs(client_addr.sin_port);
 	char* clip = inet_ntoa(client_addr.sin_addr);
     int req_len = strlen(req);
+
     req[req_len - 4] = '\0';
     printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, req, filename);
 }
@@ -98,9 +99,6 @@ bool isDirectory(char* str) {
 }
 
 bool parseRequest(int sock, char* request) {
-	
-	printf("%s\n", request);
-	printf("in parseRequest\n");
 
 	char* method  = malloc(50);
 	char* path    = malloc(50);
@@ -165,8 +163,9 @@ bool parseRequest(int sock, char* request) {
 		buffer_two[size] = 0;
 		
         res_string = getResponse(httpver);
-        // TODO: send the response
-        if (sendto(sock, res_string, sizeof(res_string), 0, (struct sockaddr*) &client_addr, sizeof(client_addr)) == -1) {
+        printf("%s\n", res_string);
+		// TODO: send the response
+        if (sendto(sock, res_string, strlen(res_string), 0, (struct sockaddr*) &client_addr, sizeof(client_addr)) == -1) {
             printf("Error sending response.");
         } else {
             printLogMessage(request, buffer, res_string);
