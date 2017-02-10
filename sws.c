@@ -19,16 +19,17 @@
  *      http://beej.us/guide/bgnet
   ---------------------------------------------*/
 
-bool  startServer(int argc, char* argv[]);
-bool  isDirectory(char* str);
-bool  isPort(char* str);
-void  printBadRequest();
-void  printNotFound();
-void  printOK();
+bool  isDirectory();
+bool  isPort();
+char* printBadRequest();
+char* printNotFound();
+char* printOK();
 void  howto();
 void  printLogMessage();
 char* getResponse();
 char* getTime();
+int   sendResponse();
+bool  startServer();
 bool  createServer();
 
 // Global Variables
@@ -41,16 +42,16 @@ char* res_string;
 
 
 // CONSOLE
-void printBadRequest() {
-    printf("ERROR 400: Bad Request\n");
+char* printBadRequest() {
+    return "ERROR 400: Bad Request\n";
 }
 
-void printNotFound() {
-    printf("ERROR 404: Not Found\n");
+char* printNotFound() {
+    return "ERROR 404: Not Found\n";
 }
 
-void printOK() {
-    printf("Status 200: OK\n");
+char* printOK() {
+    return "Status 200: OK\n";
 }
 
 void howto() {
@@ -138,11 +139,11 @@ bool parseRequest(int sock, char* request) {
     
     // Validate method and HTTP version.
     if (strcmp(method, "GET") != 0) {
-        printBadRequest();
+        sendResponse(sock, printBadRequest());
         return false;
     }
     if (strncmp(httpver, "HTTP/1.0", 8) != 0) {
-        printBadRequest();
+        sendResponse(sock, printBadRequest());
         return false;
     }
 
@@ -150,8 +151,8 @@ bool parseRequest(int sock, char* request) {
     FILE* fp = fopen(buffer, "r");
     
 	if (fp == NULL) {
-
-        printNotFound();
+        
+        sendResponse(sock, printNotFound());
         fclose(fp);
         return false;
     } else {
@@ -165,7 +166,7 @@ bool parseRequest(int sock, char* request) {
         res_string = getResponse(httpver);
         printf("%s\n", res_string);
 		// TODO: send the response
-        if (sendto(sock, res_string, strlen(res_string), 0, (struct sockaddr*) &client_addr, sizeof(client_addr)) == -1) {
+        if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
             printf("Error sending response.");
         } else {
             printLogMessage(request, buffer, res_string);
@@ -180,6 +181,11 @@ bool parseRequest(int sock, char* request) {
 
 
 // SERVER
+int sendResponse(int sock, char* data) {
+    int d_len = strlen(data);
+    return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+}
+
 bool startServer(int argc, char* argv[]) {    
 	if (argc <= 1) {
 		printf("\nERROR\n");
