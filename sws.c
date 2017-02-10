@@ -124,6 +124,10 @@ bool parseRequest(char* request) {
     sscanf(request, "%s %s %s", method, path, httpver);
     // TODO: is the server_dir always going to be under the current directory?
     sprintf(buffer, "./%s%s", server_dir, path);
+    if (isDirectory(buffer)) {
+        printf("adding /index.html...");
+        sprintf(buffer, "%s/index.html", buffer);
+    }
     // TODO: if it is only a directory and not a file, append "(/)index.html".
     
     // Account for non-case-sensitive.
@@ -146,9 +150,10 @@ bool parseRequest(char* request) {
     }
 
     // Open file and get contents.
-    FILE* fp;
+    FILE* fp = fopen(buffer, "r");
 	
-	if (isDirectory(buffer) && fopen(buffer, "r") == NULL) {
+	/*
+    if (isDirectory(buffer) && fp == NULL) {
         sprintf(buffer, "%s/index.html", buffer);
         fp = fopen(buffer, "r");
 
@@ -169,27 +174,16 @@ bool parseRequest(char* request) {
        		fclose(fp);
 		}
 	}
+    */
 
-	fp = fopen(buffer, "r");
-    if (fp == NULL) {
-		// TODO: temporary fix
-        //sprintf(buffer, "%s/index.html", buffer);
-        //if (fopen(buffer, "r") == NULL) {
-            printNotFound();
-            return false;
-        /*} else {
-            printf("looking for index.html\n");
-			fseek(fp, 0, SEEK_END);
-            int size = ftell(fp);
-            fseek(fp, 0, SEEK_SET);
-            fread(buffer_two, 1, size, fp);
-            buffer_two[size] = 0;
-            res_string = getResponse(httpver);
-			printLogMessage(request, buffer, res_string);
-            printf("\n%s\n", buffer_two);
-            fclose(fp);
-        }*/
+	if (fp == NULL) {
+
+        printNotFound();
+        fclose(fp);
+        return false;
+        
     } else {
+        
 		printf("looking for their specified file\n");
 		fseek(fp, 0, SEEK_END);
 		int size = ftell(fp);
@@ -200,6 +194,7 @@ bool parseRequest(char* request) {
 		printLogMessage(request, buffer, res_string);
 		printf("\n%s\n", buffer_two);
 		fclose(fp);
+        
 	}
     
 	//printf("scanned request and printing\n");
