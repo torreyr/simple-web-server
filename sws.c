@@ -184,7 +184,7 @@ int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
     
     if (d_len > 1024) {
-        
+        printf("sending a long file...");
         int offset = 0;
         while(offset < d_len) {
             if (sendto(sock, 
