@@ -4,7 +4,7 @@ created by: Torrey Randolph
             CSC 361 - Lab B07
 
 Syntax:
-./sws <port> <directory>
+./sws \<port\> \<directory\>
 
 NOTE: the client request path cannot include "../"
             
