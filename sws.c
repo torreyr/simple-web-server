@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -31,6 +32,7 @@ bool  createServer();
 DIR* dirptr;
 int portnum;
 struct sockaddr_in sock_addr;
+struct sockaddr_in client_addr;
 char* server_dir;
 
 
@@ -52,7 +54,9 @@ void howto() {
 }
 
 void printLogMessage(char* request, char* filename) {
-    printf("%s %s:%s %s; HTTP/1.0 200 OK; %s\n", getTime(), sock_addr.sin_addr, sock_addr.sin_port, request, filename);
+	int clport = ntohs(client_addr.sin_port);
+	char* clip = inet_ntoa(client_addr.sin_addr);
+    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, request, filename);
 }
 
 void sendResponse(char* httpver) {
@@ -135,28 +139,37 @@ bool parseRequest(char* request) {
         printBadRequest();
         return false;
     }
-    
+
     // Open file and get contents.
     FILE* fp = fopen(buffer, "r");
     if (fp == NULL) {
-        // TODO: temporary fix
+		// TODO: temporary fix
         sprintf(buffer, "%s/index.html", buffer);
         if (fopen(buffer, "r") == NULL) {
             printNotFound();
             return false;
-        }
-        else {
+        } else {
             fseek(fp, 0, SEEK_END);
             int size = ftell(fp);
             fseek(fp, 0, SEEK_SET);
             fread(buffer_two, 1, size, fp);
             buffer_two[size] = 0;
             sendResponse(httpver);
-            printLogMessage(request, buffer);
+			printLogMessage(request, buffer);
             printf("FILE CONTENTS:\n%s\n", buffer_two);
             fclose(fp);
         }
-    }
+    } else {
+		fseek(fp, 0, SEEK_END);
+		int size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		fread(buffer_two, 1, size, fp);
+		buffer_two[size] = 0;
+		sendResponse(httpver);
+		printLogMessage(request, buffer);
+		printf("FILE CONTENTS:\n%s\n", buffer_two);
+		fclose(fp);
+	}
     
 	//printf("scanned request and printing\n");
 	//printf("request: %s %s %s\n", method, path, httpver);
@@ -253,7 +266,7 @@ bool createServer() {
         
         if (FD_ISSET(sock, &fds)) {
                 
-            recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+            recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &client_addr, &len);
             if (recsize <= 0) {
                 
                 printf("Didn't receive any data...");
