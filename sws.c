@@ -146,25 +146,51 @@ bool parseRequest(char* request) {
     }
 
     // Open file and get contents.
-    FILE* fp = fopen(buffer, "r");
-    if (fp == NULL) {
-		// TODO: temporary fix
+    FILE* fp;
+	
+	if (isDirectory(buffer) && fopen(buffer, "r") == NULL) {
         sprintf(buffer, "%s/index.html", buffer);
-        if (fopen(buffer, "r") == NULL) {
+        fp = fopen(buffer, "r");
+
+		if (fp == NULL) {
             printNotFound();
+			fclose(fp);
             return false;
         } else {
-            fseek(fp, 0, SEEK_END);
+			printf("looking for index.html\n");
+			fseek(fp, 0, SEEK_END);
+	        int size = ftell(fp);
+    	    fseek(fp, 0, SEEK_SET);
+    	    fread(buffer_two, 1, size, fp);
+    	    buffer_two[size] = 0;
+    	    res_string = getResponse(httpver);
+			printLogMessage(request, buffer, res_string);
+       	    printf("\n%s\n", buffer_two);
+       		fclose(fp);
+		}
+	}
+
+	fp = fopen(buffer, "r");
+    if (fp == NULL) {
+		// TODO: temporary fix
+        //sprintf(buffer, "%s/index.html", buffer);
+        //if (fopen(buffer, "r") == NULL) {
+            printNotFound();
+            return false;
+        /*} else {
+            printf("looking for index.html\n");
+			fseek(fp, 0, SEEK_END);
             int size = ftell(fp);
             fseek(fp, 0, SEEK_SET);
             fread(buffer_two, 1, size, fp);
             buffer_two[size] = 0;
             res_string = getResponse(httpver);
 			printLogMessage(request, buffer, res_string);
-            printf("FILE CONTENTS:\n%s\n", buffer_two);
+            printf("\n%s\n", buffer_two);
             fclose(fp);
-        }
+        }*/
     } else {
+		printf("looking for their specified file\n");
 		fseek(fp, 0, SEEK_END);
 		int size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
@@ -172,7 +198,7 @@ bool parseRequest(char* request) {
 		buffer_two[size] = 0;
 		res_string = getResponse(httpver);
 		printLogMessage(request, buffer, res_string);
-		printf("FILE CONTENTS:\n%s\n", buffer_two);
+		printf("\n%s\n", buffer_two);
 		fclose(fp);
 	}
     
