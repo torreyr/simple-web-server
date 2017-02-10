@@ -11,6 +11,9 @@
 #include <dirent.h>
 #include <stdbool.h>
 
+// CURRENT PROBLEM: Long files get the status response printed at both
+//                  beginning and end.
+
 /*----------------------------------------------/
  * CODE REFERENCES/HELP:
  * Lab Slides:
