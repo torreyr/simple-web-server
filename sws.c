@@ -124,7 +124,6 @@ bool parseRequest(int sock, char* request) {
     sscanf(request, "%s %s %s", method, path, httpver);
     sprintf(buffer, "./%s%s", server_dir, path);
     if (isDirectory(buffer)) {
-        printf("adding /index.html...");
         sprintf(buffer, "%s/index.html", buffer);
     }
     
@@ -288,6 +287,7 @@ bool createServer() {
         /* TODO:
          *  send the response header and file
          *  send long files in multiple packets
+		 *	free all your malloc's
          *  reference the code that you used
          */
     }
