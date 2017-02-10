@@ -10,18 +10,27 @@
 #include <dirent.h>
 #include <stdbool.h>
 
-bool startServer(int argc, char* argv[]);
-bool isDirectory(char* str);
-bool isPort(char* str);
-void printBadRequest();
-void printNotFound();
-void printOK();
-void howto();
-bool createServer();
+/*----------------------------------------------/
+ * CODE REFERENCES/HELP:
+ * https://connex.csc.uvic.ca/access/.../Session_5.pdf
+  ---------------------------------------------*/
+
+bool  startServer(int argc, char* argv[]);
+bool  isDirectory(char* str);
+bool  isPort(char* str);
+void  printBadRequest();
+void  printNotFound();
+void  printOK();
+void  howto();
+void  printLogMessage();
+void  sendResponse();
+char* getTime();
+bool  createServer();
 
 // Global Variables
 DIR* dirptr;
 int portnum;
+struct sockaddr_in sock_addr;
 char* server_dir;
 
 
@@ -40,6 +49,15 @@ void printOK() {
 
 void howto() {
     printf("Correct syntax: ./sws <port> <directory>\n\n");
+}
+
+void printLogMessage(char* request, char* filename) {
+    printf("%s %s:%s %s; HTTP/1.0 200 OK; %s\n", getTime(), sock_addr.sin_addr, sock_addr.sin_port, request, filename);
+}
+
+void sendResponse(char* httpver) {
+    // TODO: send the response instead of printing it
+    printf("%s 200 OK\r\n\r\n", httpver);
 }
 
 char* getTime() {
@@ -82,11 +100,8 @@ bool parseRequest(char* request) {
     char* buffer_two = (char*) malloc(sizeof(char) * 1000);
     
     
-    /* TODO:
-     *  Scan through for first newline character. Delete everything following.
-     *  Split at the spaces.
-     *  Send chunks to their respective functions.
-     */
+    // TODO: test if it works with tab delimiters
+    // TODO: check for blank line at the end of the request
     
     /*printf("HERE\n");
     char* ptr = strchr(request, '\n');
@@ -97,10 +112,10 @@ bool parseRequest(char* request) {
         printf("%s", strtok(request, ptr));
     }*/
     
-    //strtok(request, " \t");
-    
     sscanf(request, "%s %s %s", method, path, httpver);
+    // TODO: is the server_dir always going to be under the current directory?
     sprintf(buffer, "./%s%s", server_dir, path);
+    // TODO: if it is only a directory and not a file, append "(/)index.html".
     
     // Account for non-case-sensitive.
     int i, j;
@@ -111,7 +126,7 @@ bool parseRequest(char* request) {
         httpver[i] = toupper(httpver[i]);
     }
     
-    // Validate request.
+    // Validate method and HTTP version.
     if (strcmp(method, "GET") != 0) {
         printBadRequest();
         return false;
@@ -121,22 +136,30 @@ bool parseRequest(char* request) {
         return false;
     }
     
+    // Open file and get contents.
     FILE* fp = fopen(buffer, "r");
     if (fp == NULL) {
-        printNotFound();
-        return false;
-    } else {
-        fseek(fp, 0, SEEK_END);
-        int size = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
-        fread(buffer_two, 1, size, fp);
-        buffer_two[size] = 0;
-        printf("FILE CONTENTS:\n%s\n", buffer_two);
-        fclose(fp);
+        // TODO: temporary fix
+        sprintf(buffer, "%s/index.html", buffer);
+        if (fopen(buffer, "r") == NULL) {
+            printNotFound();
+            return false;
+        }
+        else {
+            fseek(fp, 0, SEEK_END);
+            int size = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
+            fread(buffer_two, 1, size, fp);
+            buffer_two[size] = 0;
+            sendResponse(httpver);
+            printLogMessage(request, buffer);
+            printf("FILE CONTENTS:\n%s\n", buffer_two);
+            fclose(fp);
+        }
     }
     
-	printf("scanned request and printing\n");
-	printf("request: %s %s %s\n", method, path, httpver);
+	//printf("scanned request and printing\n");
+	//printf("request: %s %s %s\n", method, path, httpver);
     return true;
 }
 
@@ -166,9 +189,7 @@ bool startServer(int argc, char* argv[]) {
 
 bool createServer() {
     char buffer[1000];
-    struct sockaddr_in sock_addr;
     fd_set fds;
-    
     
     // Create socket.
     int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -222,11 +243,9 @@ bool createServer() {
             fgets(input, 1000, stdin);
             
             if (input[0] == 'q' || input[0] == 'Q') {
-                // TODO: clear the buffer?
+                
                 close(sock);
-                printf("Quitting...\n");
                 return false;
-            } else {
                 
             }
             
@@ -236,23 +255,28 @@ bool createServer() {
                 
             recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
             if (recsize <= 0) {
+                
                 printf("Didn't receive any data...");
                 return false;
+                
             } else {
-                printf("%s\n", getTime());
+                
+                buffer[sizeof(buffer)] = '\0';
+                printf("data: %s\n", buffer);
+                
+                if (!parseRequest(buffer)) printf("Error parsing request...");
+                //printLogMessage();
             }
             
-            buffer[sizeof(buffer)] = '\0';
-            printf("data: %s\n", buffer);
-            if (!parseRequest(buffer)) printf("Error parsing request...");
             
         }
 		
 		//memset(buffer, 0, 1000 * sizeof(char));
         
         /* TODO:
-         *  listen for the q to quit
+         *  print the status
          *  send the response header and file
+         *  send long files in multiple packets
          *  reference the lab code that you used
          */
     }
