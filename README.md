@@ -3,6 +3,8 @@ created by: Torrey Randolph
             V00818198
             CSC 361 - Lab B07
 
+This program creates a server and allows a client to send GET requests using UDP.
+
 Syntax:
 ./sws \<port\> \<directory\>
 
