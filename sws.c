@@ -209,28 +209,29 @@ bool createServer() {
         FD_SET(sock, &read_fds);
         FD_SET(0, &read_fds);
 
-        select(sock + 1, &read_fds, 0, 0, 0);
-        if (FD_ISSET(0, &read_fds)) {
-            
-            close(sock);
-            printf("Quitting...\n");
-            return false;
-            
-        } else if (FD_ISSET(sock + 1, &read_fds)) {
-            
-            recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
-            if (recsize <= 0) {
-                printf("Didn't receive any data...");
+        if (select(sock + 1, &read_fds, 0, 0, 0) < 0) {
+            if (FD_ISSET(0, &read_fds)) {
+                
+                close(sock);
+                printf("Quitting...\n");
                 return false;
-            } else {
-                printf("%s\n", getTime());
+                
+            } else if (FD_ISSET(sock + 1, &read_fds)) {
+                
+                recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+                if (recsize <= 0) {
+                    printf("Didn't receive any data...");
+                    return false;
+                } else {
+                    printf("%s\n", getTime());
+                }
+                
+                //printf("printing data...\n");        
+                buffer[sizeof(buffer)] = '\0';
+                printf("data: %s\n", buffer);
+                if (!parseRequest(buffer)) printf("Error parsing request...");
+                
             }
-            
-            //printf("printing data...\n");        
-            buffer[sizeof(buffer)] = '\0';
-            printf("data: %s\n", buffer);
-            if (!parseRequest(buffer)) printf("Error parsing request...");
-            
         }
         
 		/*recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
