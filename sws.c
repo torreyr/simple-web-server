@@ -105,7 +105,7 @@ bool parseRequest(int sock, char* request) {
 	char* path    = malloc(50);
 	char* httpver = malloc(50);
     
-    char* buffer = (char*) malloc(sizeof(char) * 1000);
+    char* buffer     = (char*) malloc(sizeof(char) * 1000);
     char* buffer_two = (char*) malloc(sizeof(char) * 1000);
     
     
@@ -182,7 +182,22 @@ bool parseRequest(int sock, char* request) {
 // SERVER
 int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
-    return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+    
+    if (d_len > 1024) {
+        
+        int offset = 0;
+        while(offset < d_len) {
+            if (sendto(sock, 
+                       data + offset, 
+                       1024, 
+                       0, 
+                       (struct sockaddr*) &client_addr, 
+                       sizeof(client_addr)) == -1) return -1;
+        }
+        return 0;
+    } else {
+        return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+    }
 }
 
 bool startServer(int argc, char* argv[]) {    
