@@ -201,69 +201,54 @@ bool createServer() {
     }
     
     // Loop forever to receive requests.
-    while(1) {
+    while (1) {
         
         // Reset file descriptors.
         FD_ZERO(&fds);
         FD_SET(sock, &fds);
         FD_SET(0, &fds);
 
-		//printf("%d %d\n", sock, sock + 1);
-        //printf("%d\n", select(sock + 1, &fds, 0, 0, 0));
 		if (select(sock + 1, &fds, NULL, NULL, NULL) < 0) {
-			printf("error with select\n");
-			//printf("%d\n", FD_ISSET(0, &fds));
-			//printf("%d\n", FD_ISSET(sock + 1, &fds));
+            
+			printf("Error with select. Closing the socket.\n");
+            close(sock);
+            return false;
+            
 		}
 
-			//if (FD_ISSET(sock + 1, &fds)) {
-			//	printf("found something in socket\n");
-			//	break;
-			//}
-
-			if (FD_ISSET(0, &fds)) {
-				
-				close(sock);
-				printf("Quitting...\n");
-				return false;
-			
-			} 
-			
-			if (FD_ISSET(sock, &fds)) {
-					
-				recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
-				if (recsize <= 0) {
-					printf("Didn't receive any data...");
-					return false;
-				} else {
-					printf("%s\n", getTime());
-				}
-				
-				//printf("printing data...\n");        
-				buffer[sizeof(buffer)] = '\0';
-				printf("data: %s\n", buffer);
-				if (!parseRequest(buffer)) printf("Error parsing request...");
-				
-			}
-		
+        if (FD_ISSET(0, &fds)) {
+            
+            char input[1000];
+            fgets(input, 1000, stdin);
+            
+            if (input[0] == 'q' || input[0] == 'Q') {
+                // TODO: clear the buffer?
+                close(sock);
+                printf("Quitting...\n");
+                return false;
+            } else {
+                
+            }
+            
+        } 
         
-		/*recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
-        if (recsize <= 0) {
-            printf("Didn't receive any data...");
-            return false;
-        } else {
-			printf("%s\n", getTime());
+        if (FD_ISSET(sock, &fds)) {
+                
+            recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+            if (recsize <= 0) {
+                printf("Didn't receive any data...");
+                return false;
+            } else {
+                printf("%s\n", getTime());
+            }
+            
+            buffer[sizeof(buffer)] = '\0';
+            printf("data: %s\n", buffer);
+            if (!parseRequest(buffer)) printf("Error parsing request...");
+            
         }
-        
-		//printf("printing data...\n");        
-		buffer[sizeof(buffer)] = '\0';
-        printf("data: %s\n", buffer);
-		if (!parseRequest(buffer)) printf("Error parsing request...");
-        //memset(buffer, 0, 1000 * sizeof(char));	
-        */
-        
-        //parseRequest("GET /index.html HTTP/1.0\r\n\r\n");
-        //break;
+		
+		//memset(buffer, 0, 1000 * sizeof(char));
         
         /* TODO:
          *  listen for the q to quit
