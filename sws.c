@@ -210,31 +210,42 @@ bool createServer() {
 
 		//printf("%d %d\n", sock, sock + 1);
         //printf("%d\n", select(sock + 1, &fds, 0, 0, 0));
-        if (select(sock + 1, &fds, NULL, NULL, NULL) >= 0) {
-        
-            if (FD_ISSET(0, &fds)) {
-                
-                close(sock);
-                printf("Quitting...\n");
-                return false;
-            
-            } else if (FD_ISSET(sock + 1, &fds)) {
-                    
-                recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
-                if (recsize <= 0) {
-                    printf("Didn't receive any data...");
-                    return false;
-                } else {
-                    printf("%s\n", getTime());
-                }
-                
-                //printf("printing data...\n");        
-                buffer[sizeof(buffer)] = '\0';
-                printf("data: %s\n", buffer);
-                if (!parseRequest(buffer)) printf("Error parsing request...");
-                
-            }
-        }
+		if (select(sock + 1, &fds, NULL, NULL, NULL) < 0) {
+			printf("error with select\n");
+			//printf("%d\n", FD_ISSET(0, &fds));
+			//printf("%d\n", FD_ISSET(sock + 1, &fds));
+		}
+
+			//if (FD_ISSET(sock + 1, &fds)) {
+			//	printf("found something in socket\n");
+			//	break;
+			//}
+
+			if (FD_ISSET(0, &fds)) {
+				
+				close(sock);
+				printf("Quitting...\n");
+				return false;
+			
+			} 
+			
+			if (FD_ISSET(sock, &fds)) {
+					
+				recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
+				if (recsize <= 0) {
+					printf("Didn't receive any data...");
+					return false;
+				} else {
+					printf("%s\n", getTime());
+				}
+				
+				//printf("printing data...\n");        
+				buffer[sizeof(buffer)] = '\0';
+				printf("data: %s\n", buffer);
+				if (!parseRequest(buffer)) printf("Error parsing request...");
+				
+			}
+		
         
 		/*recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &sock_addr, &len);
         if (recsize <= 0) {
