@@ -11,9 +11,6 @@
 #include <dirent.h>
 #include <stdbool.h>
 
-// CURRENT PROBLEM: Long files get the status response printed at both
-//                  beginning and end.
-
 /*----------------------------------------------/
  * CODE REFERENCES/HELP:
  * Lab Slides:
@@ -113,7 +110,6 @@ bool parseRequest(int sock, char* request) {
     char* buffer_two;
 
     
-    // TODO: test if it works with tab delimiters
     // TODO: check for blank line at the end of the request
     
     /*printf("HERE\n");
@@ -143,10 +139,12 @@ bool parseRequest(int sock, char* request) {
     // Validate method and HTTP version.
     if (strcmp(method, "GET") != 0) {
         sendResponse(sock, printBadRequest());
+		close(sock);
         return false;
     }
-    if (strncmp(httpver, "HTTP/1.0", 8) != 0) {
+    if (strncmp(httpver, "HTTP/1.0\r\n\r\n", 8) != 0) {
         sendResponse(sock, printBadRequest());
+		close(sock);
         return false;
     }
 
@@ -189,17 +187,20 @@ bool parseRequest(int sock, char* request) {
 // SERVER
 int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
+	char packet[1024];
 
     if (d_len > 1024) {
-        int offset = 0;
+		int offset = 0;
         while(offset < d_len) {
-            if (sendto(sock, 
-                       data + offset, 
+			memset(packet, 0, 1024);
+			strncpy(packet, data + offset, 1024);
+			if (sendto(sock, 
+                       packet, 
                        1024, 
                        0, 
                        (struct sockaddr*) &client_addr, 
                        sizeof(client_addr)) == -1) return -1;
-			offset = offset + 1024;
+			else offset = offset + 1024;
         }
         return 0;
     } else {
