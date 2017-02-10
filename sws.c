@@ -63,12 +63,16 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 	char* clip = inet_ntoa(client_addr.sin_addr);
     int req_len = strlen(req);
 
+	if (strstr(req, "\r\n\r\n") == NULL) {
+		printf("%s", printBadRequest());
+		return;
+	}
+
     req[req_len - 4] = '\0';
     printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, req, filename);
 }
 
 char* getResponse(char* httpver) {
-	printf("got reponse\n");
     res_string = (char*) malloc(sizeof(char) * 1000);
     sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
     return res_string;
@@ -109,41 +113,32 @@ bool parseRequest(int sock, char* request) {
     char* buffer = (char*) malloc(sizeof(char) * 1000);
     char* buffer_two;
 
-    
-    // TODO: check for blank line at the end of the request
-    
-    char* ptr = strchr(request, '\n');
-    if (ptr == NULL) {
-        printf("No newline character found.\n");
-    } else {
-        printf("found a newline character\n");
-       // printf("%s", strtok(request, ptr));
-    }
-    
     sscanf(request, "%s %s %s", method, path, httpver);
     sprintf(buffer, "./%s%s", server_dir, path);
     if (isDirectory(buffer)) {
         sprintf(buffer, "%s/index.html", buffer);
     }
+	if (strstr(buffer, "../") != NULL) {
+		sendResponse(sock, printNotFound());
+		return false;
+	}
  
     // Account for non-case-sensitive.
     int i, j;
 	for(i = 0; method[i]; i++){
         method[i] = toupper(method[i]);
     }
-    for(j = 0; httpver[i]; i++){
-        httpver[i] = toupper(httpver[i]);
+    for(j = 0; httpver[j]; j++){
+        httpver[j] = toupper(httpver[j]);
     }
     
     // Validate method and HTTP version.
     if (strcmp(method, "GET") != 0) {
         sendResponse(sock, printBadRequest());
-		close(sock);
         return false;
     }
     if (strncmp(httpver, "HTTP/1.0\r\n\r\n", 8) != 0) {
         sendResponse(sock, printBadRequest());
-		close(sock);
         return false;
     }
 
@@ -167,7 +162,6 @@ bool parseRequest(int sock, char* request) {
 	
 		// Create the response.	
         res_string = getResponse(httpver);
-        printf("%s\n", res_string);
 		// Send the response
         if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
             printf("Error sending response.");
@@ -219,7 +213,7 @@ bool startServer(int argc, char* argv[]) {
         howto();
         return false;
     }
-    
+ 
     if (!isDirectory(argv[2])) {
         printf("\nInvalid directory. Exiting the program.\n");
         howto();
@@ -235,6 +229,7 @@ bool startServer(int argc, char* argv[]) {
 bool createServer() {
     char buffer[1000];
     fd_set fds;
+	memset(buffer, 0, sizeof(buffer));
     
     // Create socket.
     int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -299,23 +294,24 @@ bool createServer() {
             if (recsize <= 0) {
                 
                 printf("Didn't receive any data...");
-                return false;
             } else {
+
                 buffer[sizeof(buffer)] = '\0';
-                if (!parseRequest(sock, buffer)) printf("Error parsing request...");
+                parseRequest(sock, buffer);
             }
+
+			memset(buffer, 0, sizeof(buffer));
         }
 		
-		memset(buffer, 0, 1000 * sizeof(char));
+		memset(buffer, 0, sizeof(buffer));
         
         /* TODO:
-         *  send the response header and file
-         *  send long files in multiple packets
 		 *	free all your malloc's
          *  reference the code that you used
          */
     }
-    
+
+	close(sock);
     return true;
 }
 
