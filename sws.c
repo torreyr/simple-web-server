@@ -24,7 +24,7 @@ void  printNotFound();
 void  printOK();
 void  howto();
 void  printLogMessage();
-void  sendResponse();
+char* getResponse();
 char* getTime();
 bool  createServer();
 
@@ -34,6 +34,7 @@ int portnum;
 struct sockaddr_in sock_addr;
 struct sockaddr_in client_addr;
 char* server_dir;
+char* res_string;
 
 
 // CONSOLE
@@ -53,15 +54,19 @@ void howto() {
     printf("Correct syntax: ./sws <port> <directory>\n\n");
 }
 
-void printLogMessage(char* request, char* filename) {
+void printLogMessage(char* req, char* filename, char* res_string) {
 	int clport = ntohs(client_addr.sin_port);
 	char* clip = inet_ntoa(client_addr.sin_addr);
-    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, request, filename);
+    int req_len = strlen(req);
+    req[req_len - 4] = '\0';
+    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, req, filename);
 }
 
-void sendResponse(char* httpver) {
+char* getResponse(char* httpver) {
     // TODO: send the response instead of printing it
-    printf("%s 200 OK\r\n\r\n", httpver);
+    res_string = (char*) malloc(sizeof(char) * 1000);
+    sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
+    return res_string;
 }
 
 char* getTime() {
@@ -154,8 +159,8 @@ bool parseRequest(char* request) {
             fseek(fp, 0, SEEK_SET);
             fread(buffer_two, 1, size, fp);
             buffer_two[size] = 0;
-            sendResponse(httpver);
-			printLogMessage(request, buffer);
+            res_string = getResponse(httpver);
+			printLogMessage(request, buffer, res_string);
             printf("FILE CONTENTS:\n%s\n", buffer_two);
             fclose(fp);
         }
@@ -165,8 +170,8 @@ bool parseRequest(char* request) {
 		fseek(fp, 0, SEEK_SET);
 		fread(buffer_two, 1, size, fp);
 		buffer_two[size] = 0;
-		sendResponse(httpver);
-		printLogMessage(request, buffer);
+		res_string = getResponse(httpver);
+		printLogMessage(request, buffer, res_string);
 		printf("FILE CONTENTS:\n%s\n", buffer_two);
 		fclose(fp);
 	}
