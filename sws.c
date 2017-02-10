@@ -68,6 +68,7 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 }
 
 char* getResponse(char* httpver) {
+	printf("got reponse\n");
     res_string = (char*) malloc(sizeof(char) * 1000);
     sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
     return res_string;
@@ -105,9 +106,9 @@ bool parseRequest(int sock, char* request) {
 	char* path    = malloc(50);
 	char* httpver = malloc(50);
     
-    char* buffer     = (char*) malloc(sizeof(char) * 1000);
-    char* buffer_two = (char*) malloc(sizeof(char) * 1000);
-    
+    char* buffer = (char*) malloc(sizeof(char) * 1000);
+    char* buffer_two;
+
     
     // TODO: test if it works with tab delimiters
     // TODO: check for blank line at the end of the request
@@ -126,7 +127,7 @@ bool parseRequest(int sock, char* request) {
     if (isDirectory(buffer)) {
         sprintf(buffer, "%s/index.html", buffer);
     }
-    
+ 
     // Account for non-case-sensitive.
     int i, j;
 	for(i = 0; method[i]; i++){
@@ -159,17 +160,20 @@ bool parseRequest(int sock, char* request) {
 		fseek(fp, 0, SEEK_END);
 		int size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
+		buffer_two = (char*) malloc(size * sizeof(char));
+		memset(buffer_two, 0, sizeof(buffer_two));
 		fread(buffer_two, 1, size, fp);
 		buffer_two[size] = 0;
-		
+	
+		// Create the response.	
         res_string = getResponse(httpver);
         printf("%s\n", res_string);
-		// TODO: send the response
+		// Send the response
         if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
             printf("Error sending response.");
         } else {
-            printLogMessage(request, buffer, res_string);
-            printf("\n%s\n", buffer_two);
+        	//printf("here\n");
+		    printLogMessage(request, buffer, res_string);
         }
         
 		fclose(fp);
@@ -182,9 +186,8 @@ bool parseRequest(int sock, char* request) {
 // SERVER
 int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
-    
+
     if (d_len > 1024) {
-        printf("sending a long file...");
         int offset = 0;
         while(offset < d_len) {
             if (sendto(sock, 
@@ -193,10 +196,11 @@ int sendResponse(int sock, char* data) {
                        0, 
                        (struct sockaddr*) &client_addr, 
                        sizeof(client_addr)) == -1) return -1;
+			offset = offset + 1024;
         }
         return 0;
     } else {
-        return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+	    return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
     }
 }
 
@@ -291,7 +295,6 @@ bool createServer() {
                 printf("Didn't receive any data...");
                 return false;
             } else {
-                
                 buffer[sizeof(buffer)] = '\0';
                 if (!parseRequest(sock, buffer)) printf("Error parsing request...");
             }
