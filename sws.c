@@ -1,8 +1,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <netdb.h>
-#include <arpa/inet.h>
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -13,7 +13,10 @@
 
 /*----------------------------------------------/
  * CODE REFERENCES/HELP:
- * https://connex.csc.uvic.ca/access/.../Session_5.pdf
+ * Lab Slides:
+ *      https://connex.csc.uvic.ca/access/.../Session_5.pdf
+ * Beej's Guide to Network Programming:
+ *      http://beej.us/guide/bgnet
   ---------------------------------------------*/
 
 bool  startServer(int argc, char* argv[]);
@@ -63,7 +66,6 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 }
 
 char* getResponse(char* httpver) {
-    // TODO: send the response instead of printing it
     res_string = (char*) malloc(sizeof(char) * 1000);
     sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
     return res_string;
@@ -95,8 +97,7 @@ bool isDirectory(char* str) {
     else return true;
 }
 
-bool parseRequest(char* request) {
-    // TODO: do this with regular expressions
+bool parseRequest(int sock, char* request) {
 	
 	printf("%s\n", request);
 	printf("in parseRequest\n");
@@ -149,13 +150,12 @@ bool parseRequest(char* request) {
 
     // Open file and get contents.
     FILE* fp = fopen(buffer, "r");
-	
+    
 	if (fp == NULL) {
 
         printNotFound();
         fclose(fp);
         return false;
-        
     } else {
         
 		fseek(fp, 0, SEEK_END);
@@ -163,15 +163,19 @@ bool parseRequest(char* request) {
 		fseek(fp, 0, SEEK_SET);
 		fread(buffer_two, 1, size, fp);
 		buffer_two[size] = 0;
-		res_string = getResponse(httpver);
-		printLogMessage(request, buffer, res_string);
-		printf("\n%s\n", buffer_two);
-		fclose(fp);
+		
+        res_string = getResponse(httpver);
+        // TODO: send the response
+        if (sendto(sock, res_string, sizeof(res_string), 0, (struct sockaddr*) &client_addr, sizeof(client_addr)) == -1) {
+            printf("Error sending response.");
+        } else {
+            printLogMessage(request, buffer, res_string);
+            printf("\n%s\n", buffer_two);
+        }
         
+		fclose(fp);
 	}
     
-	//printf("scanned request and printing\n");
-	//printf("request: %s %s %s\n", method, path, httpver);
     return true;
 }
 
@@ -246,7 +250,6 @@ bool createServer() {
 			printf("Error with select. Closing the socket.\n");
             close(sock);
             return false;
-            
 		}
 
         if (FD_ISSET(0, &fds)) {
@@ -258,9 +261,7 @@ bool createServer() {
                 
                 close(sock);
                 return false;
-                
             }
-            
         } 
         
         if (FD_ISSET(sock, &fds)) {
@@ -270,26 +271,19 @@ bool createServer() {
                 
                 printf("Didn't receive any data...");
                 return false;
-                
             } else {
                 
                 buffer[sizeof(buffer)] = '\0';
-                printf("data: %s\n", buffer);
-                
-                if (!parseRequest(buffer)) printf("Error parsing request...");
-                //printLogMessage();
+                if (!parseRequest(sock, buffer)) printf("Error parsing request...");
             }
-            
-            
         }
 		
-		//memset(buffer, 0, 1000 * sizeof(char));
+		memset(buffer, 0, 1000 * sizeof(char));
         
         /* TODO:
-         *  print the status
          *  send the response header and file
          *  send long files in multiple packets
-         *  reference the lab code that you used
+         *  reference the code that you used
          */
     }
     
