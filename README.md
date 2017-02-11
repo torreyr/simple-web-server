@@ -5,17 +5,17 @@ created by: Torrey Randolph
 
 This program creates a server and allows a client to send GET requests using UDP.
 
-Syntax:
-./sws \<port\> \<directory\>
+### Syntax:
+  ./sws \<port\> \<directory\>
 
 NOTE: the client request path cannot include "../"
 
-Files:
+### Files:
  - sws.c :		simple web server
  - makefile : 	a makefile to compile sws.c or clean the directory
  - tests.txt :	sample requests and their expected outputs
  - www/ :		testing directory
-	index.html : 	text file used for testing
-	longfile.html : html file used for testing
+    index.html : 	text file used for testing
+    longfile.html : html file used for testing
             
 My simple web server code is broken up into sections. Namely, server functions, methods used to parse user input, and console output functions.
