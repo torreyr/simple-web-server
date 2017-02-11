@@ -123,11 +123,11 @@ bool isDirectory(char* str) {
  */
 bool parseRequest(int sock, char* request) {
 
-	char* method  = malloc(50);
-	char* path    = malloc(50);
-	char* httpver = malloc(50);
+	char* method[50];
+	char* path[50];
+	char* httpver[50];
     
-    char* buffer = (char*) malloc(sizeof(char) * 1000);
+    char* buffer[1000];
     char* buffer_two;
 
     sscanf(request, "%s %s %s", method, path, httpver);
@@ -173,10 +173,10 @@ bool parseRequest(int sock, char* request) {
 		fseek(fp, 0, SEEK_END);
 		int size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
-		buffer_two = (char*) malloc(size * sizeof(char));
+		buffer_two = (char*) malloc((size + 1) * sizeof(char));
 		memset(buffer_two, 0, sizeof(buffer_two));
 		fread(buffer_two, 1, size, fp);
-		buffer_two[size] = 0;
+		buffer_two[size + 1] = 0;
 	
 		// Create the response.	
         char* res_string = "HTTP/1.0 200 OK\r\n\r\n";
@@ -188,6 +188,7 @@ bool parseRequest(int sock, char* request) {
 		    printLogMessage(request, buffer, res_string);
         }
         
+		free(buffer_two);
 		fclose(fp);
 	}
     
