@@ -2,5 +2,6 @@ all:
 	gcc -o sws sws.c
 
 clean:
-	rm *.o
+	rm *.exe
 	rm *.bin
+	rm *.o
