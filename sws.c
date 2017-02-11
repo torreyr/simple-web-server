@@ -339,9 +339,6 @@ bool createServer() {
 		
 		memset(buffer, 0, sizeof(buffer));
         
-        /* TODO:
-		 *	free all your malloc's
-         */
     }
 
 	close(sock);
