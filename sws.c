@@ -15,12 +15,13 @@
  * CODE REFERENCES/HELP:
  * Lab Slides:
  *      https://connex.csc.uvic.ca/access/.../Session_5.pdf
+ * udp_client.c from Lab 2:
+ *		https://connex.csc.uvic.ca/access/.../udp_server.c
  * Beej's Guide to Network Programming:
  *      http://beej.us/guide/bgnet
   ---------------------------------------------*/
 
-bool  isDirectory();
-bool  isPort();
+// Functions
 char* printBadRequest();
 char* printNotFound();
 char* printOK();
@@ -28,6 +29,9 @@ void  howto();
 void  printLogMessage();
 char* getResponse();
 char* getTime();
+bool  isPort();
+bool  isDirectory();
+bool  parseRequest();
 int   sendResponse();
 bool  startServer();
 bool  createServer();
@@ -41,7 +45,7 @@ char* server_dir;
 char* res_string;
 
 
-// CONSOLE
+// ----- CONSOLE ----- //
 char* printBadRequest() {
     return "ERROR 400: Bad Request\n";
 }
@@ -58,6 +62,9 @@ void howto() {
     printf("Correct syntax: ./sws <port> <directory>\n\n");
 }
 
+/*
+ *	Prints the server's log message.
+ */
 void printLogMessage(char* req, char* filename, char* res_string) {
 	int clport = ntohs(client_addr.sin_port);
 	char* clip = inet_ntoa(client_addr.sin_addr);
@@ -69,15 +76,21 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 	}
 
     req[req_len - 4] = '\0';
-    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n", getTime(), clip, clport, req, filename);
+    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n\n", getTime(), clip, clport, req, filename);
 }
 
+/*
+ *	Returns the server's response to be sent to the client.
+ */
 char* getResponse(char* httpver) {
     res_string = (char*) malloc(sizeof(char) * 1000);
     sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
     return res_string;
 }
 
+/*
+ *	Returns the formatted time of the request.
+ */
 char* getTime() {
     char* buffer;
 	buffer = malloc(20);
@@ -91,19 +104,31 @@ char* getTime() {
 }
 
 
-// PARSING
+// ----- PARSING ----- //
+/*
+ *	Validates a port number.
+ */
 bool isPort(char* str) {
     portnum = atoi(str);
     if( (portnum > 0) && (portnum < 65535) ) return true;
     return false;
 }
 
+/*
+ *	Checks if a path leads to a directory.
+ *	Return false if the path cannot be opened as a directory.
+ */
 bool isDirectory(char* str) {
     dirptr = opendir(str);
     if (dirptr == NULL) return false;
     else return true;
 }
 
+/*
+ *	Splits the client request into method, path, and HTTP version.
+ *	Opens and sends the requested file back to the client.
+ *	Then calls printLogMessage();
+ */
 bool parseRequest(int sock, char* request) {
 
 	char* method  = malloc(50);
@@ -142,7 +167,7 @@ bool parseRequest(int sock, char* request) {
         return false;
     }
 
-    // Open file and get contents.
+    // Open and send file.
     FILE* fp = fopen(buffer, "r");
     
 	if (fp == NULL) {
@@ -152,6 +177,7 @@ bool parseRequest(int sock, char* request) {
         return false;
     } else {
         
+		// Read in the file.
 		fseek(fp, 0, SEEK_END);
 		int size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
@@ -162,11 +188,11 @@ bool parseRequest(int sock, char* request) {
 	
 		// Create the response.	
         res_string = getResponse(httpver);
+		
 		// Send the response
         if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
             printf("Error sending response.");
         } else {
-        	//printf("here\n");
 		    printLogMessage(request, buffer, res_string);
         }
         
@@ -177,13 +203,19 @@ bool parseRequest(int sock, char* request) {
 }
 
 
-// SERVER
+// ----- SERVER ----- //
+/*
+ *	Sends the file to the client.
+ *	Sends large files in multiple packets.
+ */
 int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
 	char packet[1024];
 
     if (d_len > 1024) {
 		int offset = 0;
+		
+		// Create packets.
         while(offset < d_len) {
 			memset(packet, 0, 1024);
 			strncpy(packet, data + offset, 1024);
@@ -195,12 +227,15 @@ int sendResponse(int sock, char* data) {
                        sizeof(client_addr)) == -1) return -1;
 			else offset = offset + 1024;
         }
+		
         return 0;
-    } else {
-	    return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
-    }
+    } else return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
 }
 
+/*
+ *	Checks command line arguments for correct syntax.
+ *	Sets the server directory.
+ */
 bool startServer(int argc, char* argv[]) {    
 	if (argc <= 1) {
 		printf("\nIncorrect syntax.\n");
@@ -226,6 +261,10 @@ bool startServer(int argc, char* argv[]) {
 	return true;
 }
 
+/*
+ *	Creates the socket, binds it to the port, sets options.
+ *	Waits for client requests.
+ */
 bool createServer() {
     char buffer[1000];
     fd_set fds;
@@ -276,6 +315,7 @@ bool createServer() {
             return false;
 		}
 
+		// Read from standard input.
         if (FD_ISSET(0, &fds)) {
             
             char input[1000];
@@ -288,6 +328,7 @@ bool createServer() {
             }
         } 
         
+		// Read from the socket.
         if (FD_ISSET(sock, &fds)) {
                 
             recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &client_addr, &len);
@@ -307,7 +348,6 @@ bool createServer() {
         
         /* TODO:
 		 *	free all your malloc's
-         *  reference the code that you used
          */
     }
 
@@ -316,7 +356,7 @@ bool createServer() {
 }
 
 
-// MAIN
+// ----- MAIN ----- //
 int main(int argc, char* argv[]) {
     if ( !startServer(argc, argv) ) return 0;
     if ( !createServer(argv) ) return 0;
