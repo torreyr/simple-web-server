@@ -76,15 +76,16 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 	}
 
     req[req_len - 4] = '\0';
-    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n\n", getTime(), clip, clport, req, filename);
+	char* time = getTime();
+    printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n\n", time, clip, clport, req, filename);
+	free(time);
 }
 
 /*
  *	Returns the formatted time of the request.
  */
 char* getTime() {
-    char* buffer;
-	buffer = malloc(20);
+    char* buffer = malloc(20);
     time_t curtime;
 	struct tm* times;
 	
