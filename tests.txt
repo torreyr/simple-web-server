@@ -1,1 +1,5 @@
 get /index.html HTTP/1.0	# HTTP/1.0 200 OK
+GET / HTTP/1.0				# HTTP/1.0 200 OK
+GET /../www HTTP/1.0		# HTTP/1.0 404 Not Found
+POST / HTTP/1.0				# HTTP/1.0 400 Bad Request
+GET/HTTP/1.0				# HTTP/1.0 400 Bad Request

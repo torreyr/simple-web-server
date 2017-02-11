@@ -47,15 +47,15 @@ char* res_string;
 
 // ----- CONSOLE ----- //
 char* printBadRequest() {
-    return "ERROR 400: Bad Request\n";
+    return "HTTP/1.0 400 Bad Request\n\n";
 }
 
 char* printNotFound() {
-    return "ERROR 404: Not Found\n";
+    return "HTTP/1.0 404 Not Found\n\n";
 }
 
 char* printOK() {
-    return "Status 200: OK\n";
+    return "HTTP/1.0 200 OK\n\n";
 }
 
 void howto() {
