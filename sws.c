@@ -123,11 +123,11 @@ bool isDirectory(char* str) {
  */
 bool parseRequest(int sock, char* request) {
 
-	char* method[50];
-	char* path[50];
-	char* httpver[50];
+	char method[50];
+	char path[50];
+	char httpver[50];
     
-    char* buffer[1000];
+    char buffer[1000];
     char* buffer_two;
 
     sscanf(request, "%s %s %s", method, path, httpver);
