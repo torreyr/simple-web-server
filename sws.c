@@ -80,15 +80,6 @@ void printLogMessage(char* req, char* filename, char* res_string) {
 }
 
 /*
- *	Returns the server's response to be sent to the client.
- */
-char* getResponse(char* httpver) {
-    res_string = (char*) malloc(sizeof(char) * 1000);
-    sprintf(res_string, "%s 200 OK\r\n\r\n", httpver);
-    return res_string;
-}
-
-/*
  *	Returns the formatted time of the request.
  */
 char* getTime() {
@@ -187,7 +178,7 @@ bool parseRequest(int sock, char* request) {
 		buffer_two[size] = 0;
 	
 		// Create the response.	
-        res_string = getResponse(httpver);
+        char* res_string = "HTTP/1.0 200 OK\r\n\r\n";
 		
 		// Send the response
         if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
