@@ -16,12 +16,12 @@
  * Lab Slides:
  *      https://connex.csc.uvic.ca/access/.../Session_5.pdf
  * udp_client.c from Lab 2:
- *		https://connex.csc.uvic.ca/access/.../udp_server.c
+ *      https://connex.csc.uvic.ca/access/.../udp_server.c
  * Beej's Guide to Network Programming:
  *      http://beej.us/guide/bgnet
   ---------------------------------------------*/
 
-// Functions
+// Function Prototypes
 char* printBadRequest();
 char* printNotFound();
 char* printOK();
@@ -63,42 +63,42 @@ void howto() {
 }
 
 /*
- *	Prints the server's log message.
+ *  Prints the server's log message.
  */
 void printLogMessage(char* req, char* filename, char* res_string) {
-	int clport = ntohs(client_addr.sin_port);
-	char* clip = inet_ntoa(client_addr.sin_addr);
+    int clport = ntohs(client_addr.sin_port);
+    char* clip = inet_ntoa(client_addr.sin_addr);
     int req_len = strlen(req);
 
-	if (strstr(req, "\r\n\r\n") == NULL) {
-		printf("%s", printBadRequest());
-		return;
-	}
+    if (strstr(req, "\r\n\r\n") == NULL) {
+        printf("%s", printBadRequest());
+        return;
+    }
 
     req[req_len - 4] = '\0';
-	char* time = getTime();
+    char* time = getTime();
     printf("%s %s:%d %s; HTTP/1.0 200 OK; %s\n\n", time, clip, clport, req, filename);
-	free(time);
+    free(time);
 }
 
 /*
- *	Returns the formatted time of the request.
+ *  Returns the formatted time of the request.
  */
 char* getTime() {
     char* buffer = malloc(20);
     time_t curtime;
-	struct tm* times;
-	
-	time(&curtime);
+    struct tm* times;
+    
+    time(&curtime);
     times = localtime(&curtime);
     strftime(buffer, 30, "%b %d %T", times);
-	return buffer;
+    return buffer;
 }
 
 
 // ----- PARSING ----- //
 /*
- *	Validates a port number.
+ *  Validates a port number.
  */
 bool isPort(char* str) {
     portnum = atoi(str);
@@ -107,8 +107,8 @@ bool isPort(char* str) {
 }
 
 /*
- *	Checks if a path leads to a directory.
- *	Return false if the path cannot be opened as a directory.
+ *  Checks if a path leads to a directory.
+ *  Return false if the path cannot be opened as a directory.
  */
 bool isDirectory(char* str) {
     dirptr = opendir(str);
@@ -117,15 +117,15 @@ bool isDirectory(char* str) {
 }
 
 /*
- *	Splits the client request into method, path, and HTTP version.
- *	Opens and sends the requested file back to the client.
- *	Then calls printLogMessage();
+ *  Splits the client request into method, path, and HTTP version.
+ *  Opens and sends the requested file back to the client.
+ *  Then calls printLogMessage();
  */
 bool parseRequest(int sock, char* request) {
 
-	char method[50];
-	char path[50];
-	char httpver[50];
+    char method[50];
+    char path[50];
+    char httpver[50];
     
     char buffer[1000];
     char* buffer_two;
@@ -135,14 +135,14 @@ bool parseRequest(int sock, char* request) {
     if (isDirectory(buffer)) {
         sprintf(buffer, "%s/index.html", buffer);
     }
-	if (strstr(buffer, "../") != NULL) {
-		sendResponse(sock, printNotFound());
-		return false;
-	}
+    if (strstr(buffer, "../") != NULL) {
+        sendResponse(sock, printNotFound());
+        return false;
+    }
  
     // Account for non-case-sensitive.
     int i, j;
-	for(i = 0; method[i]; i++){
+    for(i = 0; method[i]; i++){
         method[i] = toupper(method[i]);
     }
     for(j = 0; httpver[j]; j++){
@@ -162,35 +162,35 @@ bool parseRequest(int sock, char* request) {
     // Open and send file.
     FILE* fp = fopen(buffer, "r");
     
-	if (fp == NULL) {
+    if (fp == NULL) {
         
         sendResponse(sock, printNotFound());
         fclose(fp);
         return false;
     } else {
         
-		// Read in the file.
-		fseek(fp, 0, SEEK_END);
-		int size = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		buffer_two = (char*) malloc((size + 1) * sizeof(char));
-		memset(buffer_two, 0, sizeof(buffer_two));
-		fread(buffer_two, 1, size, fp);
-		buffer_two[size + 1] = 0;
-	
-		// Create the response.	
+        // Read in the file.
+        fseek(fp, 0, SEEK_END);
+        int size = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        buffer_two = (char*) malloc((size + 1) * sizeof(char));
+        memset(buffer_two, 0, sizeof(buffer_two));
+        fread(buffer_two, 1, size, fp);
+        buffer_two[size + 1] = 0;
+    
+        // Create the response.    
         char* res_string = "HTTP/1.0 200 OK\r\n\r\n";
-		
-		// Send the response
+        
+        // Send the response
         if (sendResponse(sock, res_string) == -1 || sendResponse(sock, buffer_two) == -1) {
             printf("Error sending response.");
         } else {
-		    printLogMessage(request, buffer, res_string);
+            printLogMessage(request, buffer, res_string);
         }
         
-		free(buffer_two);
-		fclose(fp);
-	}
+        free(buffer_two);
+        fclose(fp);
+    }
     
     return true;
 }
@@ -198,43 +198,43 @@ bool parseRequest(int sock, char* request) {
 
 // ----- SERVER ----- //
 /*
- *	Sends the file to the client.
- *	Sends large files in multiple packets.
+ *  Sends the file to the client.
+ *  Sends large files in multiple packets.
  */
 int sendResponse(int sock, char* data) {
     int d_len = strlen(data);
-	char packet[1024];
+    char packet[1024];
 
     if (d_len > 1024) {
-		int offset = 0;
-		
-		// Create packets.
+        int offset = 0;
+        
+        // Create packets.
         while(offset < d_len) {
-			memset(packet, 0, 1024);
-			strncpy(packet, data + offset, 1024);
-			if (sendto(sock, 
+            memset(packet, 0, 1024);
+            strncpy(packet, data + offset, 1024);
+            if (sendto(sock, 
                        packet, 
                        1024, 
                        0, 
                        (struct sockaddr*) &client_addr, 
                        sizeof(client_addr)) == -1) return -1;
-			else offset = offset + 1024;
+            else offset = offset + 1024;
         }
-		
+        
         return 0;
     } else return sendto(sock, data, d_len, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
 }
 
 /*
- *	Checks command line arguments for correct syntax.
- *	Sets the server directory.
+ *  Checks command line arguments for correct syntax.
+ *  Sets the server directory.
  */
 bool startServer(int argc, char* argv[]) {    
-	if (argc <= 1) {
-		printf("\nIncorrect syntax.\n");
+    if (argc <= 1) {
+        printf("\nIncorrect syntax.\n");
         howto();
-		return false;
-	}
+        return false;
+    }
 
     if (!isPort(argv[1])) {
         printf("\nInvalid port number. Exiting the program.\n");
@@ -247,21 +247,21 @@ bool startServer(int argc, char* argv[]) {
         howto();
         return false;
     } else server_dir = argv[2];
-	
-	printf("sws is running on UDP port %s and serving %s\n", argv[1], argv[2]);
-	printf("press 'q' to quit ...\n");
     
-	return true;
+    printf("sws is running on UDP port %s and serving %s\n", argv[1], argv[2]);
+    printf("press 'q' to quit ...\n");
+    
+    return true;
 }
 
 /*
- *	Creates the socket, binds it to the port, sets options.
- *	Waits for client requests.
+ *  Creates the socket, binds it to the port, sets options.
+ *  Waits for client requests.
  */
 bool createServer() {
     char buffer[1000];
     fd_set fds;
-	memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, sizeof(buffer));
     
     // Create socket.
     int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -301,14 +301,14 @@ bool createServer() {
         FD_SET(sock, &fds);
         FD_SET(0, &fds);
 
-		if (select(sock + 1, &fds, NULL, NULL, NULL) < 0) {
+        if (select(sock + 1, &fds, NULL, NULL, NULL) < 0) {
             
-			printf("Error with select. Closing the socket.\n");
+            printf("Error with select. Closing the socket.\n");
             close(sock);
             return false;
-		}
+        }
 
-		// Read from standard input.
+        // Read from standard input.
         if (FD_ISSET(0, &fds)) {
             
             char input[1000];
@@ -321,7 +321,7 @@ bool createServer() {
             }
         } 
         
-		// Read from the socket.
+        // Read from the socket.
         if (FD_ISSET(sock, &fds)) {
                 
             recsize = recvfrom(sock, (void*) buffer, sizeof(buffer), 0, (struct sockaddr*) &client_addr, &len);
@@ -334,14 +334,14 @@ bool createServer() {
                 parseRequest(sock, buffer);
             }
 
-			memset(buffer, 0, sizeof(buffer));
+            memset(buffer, 0, sizeof(buffer));
         }
-		
-		memset(buffer, 0, sizeof(buffer));
+        
+        memset(buffer, 0, sizeof(buffer));
         
     }
 
-	close(sock);
+    close(sock);
     return true;
 }
 
